@@ -12,8 +12,12 @@ class ImagePosEmbed(layers.Layer):
 
         Parameters
         ----------
+        batch_size: integer
+          The size of batch to train and update weight at once
         patch_size : integer
           The width and height of the patch
+        stride_num: integer
+          The number of pixels of the sliding window to shift
         patch_num : integer
           Number of total patches
         proj_dim : integer
@@ -48,6 +52,11 @@ class ImagePosEmbed(layers.Layer):
         images = images / 255.  # Normalize Image Values
         images = self.img2patch(images)
         '''
+        # This is used for dynamic batch training, however there are some issues with the input batch that keras fit
+        # function wouldn't recognize the input batch shape. So the tf.boardcast_to function couldn't take None as
+        # input. This probably would be solved in the future using on_train_begin or on_epoch_begin to get the batch
+        # size manually. Mainly if saved and load the model for use after training there would be some issues when
+        # predicting. So unfortunately there is only a fixed input batch size at the current state.
         if images.shape[0] != None:
             self.batch_size = images.shape[0]
         else:

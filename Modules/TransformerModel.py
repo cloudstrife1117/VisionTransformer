@@ -1,3 +1,9 @@
+"""
+Transformer based models to perform on image classification tasks
+
+@author: Jeng-Chung Lien
+@email: masa67890@gmail.com
+"""
 import os
 # Suppress the INFO message
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
@@ -21,9 +27,27 @@ class VisionTransformer:
         ----------
         input_shape : tuple
           The input shape of the model
+        batch_size: integer
+          The size of batch to train and update weight at once
+        classes: integer
+          Number of classes to classify
+        patch_size : integer
+          The width and height of the patch
+        stride_num: integer
+          The number of pixels of the sliding window to shift
+        patch_num : integer
+          Number of total patches
+        proj_dim : integer
+          The vector size to project each patch to and the base number of neurons each layer trough the network
+        num_heads: integer
+          The number of attention heads in Multi-Head Self-Attention
+        stack_num: integer
+          The number of transformer encoder stack(depth of the model)
+        dropout: float
+          The dropout probability trough the whole network
         model : string
           The parameter to decide which model to use.
-          "ViT" is the baseline Vision Transformer classification model.
+          "ViT" is the baseline(for this project) Vision Transformer classification model.
 
         References
         ----------
@@ -46,7 +70,15 @@ class VisionTransformer:
             raise ValueError("Model doesn't exist!")
 
     def ViT(self):
-        # Create Inputs
+        """
+        Function to construct the baseline(for this project) Vision Transformer classification model.
+
+        Returns
+        -------
+        model : Keras model class
+          The baseline Vision Transformer model itself
+        """
+        # Create Input layer
         inputs = Input(self.input_shape)
         # Generate Image plus Position Patch Embeddings
         embedding_layer = ImagePosEmbed(self.batch_size, self.patch_size, self.stride_num, self.patch_num, self.proj_dim)
@@ -63,6 +95,22 @@ class VisionTransformer:
         return model
 
     def TransformerEncoder(self, x):
+        """
+        Function of the Transformer Encoder in the Vision Transformer model.
+        Layers in the order of 1. Layer Normalization, 2. Multi-Head Attention, 3. Layer Normalization, 4. Multi Layer Perceptron.
+        With addition skip connections from the input of 1. with the output of 2. as the input of 3.
+        and addition skip connections from the input of 3. with the output of 4. as the final output.
+
+        Parameters
+        ----------
+        x : tensor
+          The input of patches embeddings or the output of the previous transformer encoder as input
+
+        Returns
+        -------
+        context : tensor
+          The output of the transformer encoder
+        """
         x_norm1 = LayerNormalization(epsilon=1e-6)(x)
         x_mha = MultiHeadAttention(head_size=self.proj_dim, num_heads=self.num_heads, dropout=self.dropout)([x_norm1, x_norm1, x_norm1])
         x_concat1 = Add()([x_mha, x_norm1])
@@ -73,6 +121,22 @@ class VisionTransformer:
         return x_concat2
 
     def MLP(self, inputs, units):
+        """
+        Function of the Multi Layer Perceptron in the Transformer Encoder.
+        Layers in the order of dense layer with gelu activation, dropout, dense layer with gelu activation, dropout
+
+        Parameters
+        ----------
+        inputs : tensor
+          The input of a tensor in the transformer encoder
+        units : tensor
+          The parameter to determine the number of units in the dense layers
+
+        Returns
+        -------
+        context : tensor
+          The output of the multi layer perceptron
+        """
         x1 = Dense(units*2, activation=gelu)(inputs)
         x1 = Dropout(self.dropout)(x1)
         x2 = Dense(units, activation=gelu)(x1)
@@ -81,6 +145,24 @@ class VisionTransformer:
         return x2
 
     def MLP_head(self, inputs, units):
+        """
+        Function of the Multi Layer Perceptron Head in the Vision Transformer.
+        This is the final layers to output the classes of the image.
+        Layers in the order of dense layer with gelu activation, dropout, dense layer with linear activation
+
+        Parameters
+        ----------
+        inputs : tensor
+          The input to the MLP_head would be the corresponding output of the Transformer Encoder from the input of
+          the class token(This is to not introduce any bias towards any of the patches).
+        units : tensor
+          The parameter to determine the number of units in the dense layers
+
+        Returns
+        -------
+        context : tensor
+          The final output of the vision transformer without logits(Need additional sigmoid or softmax to get probability)
+        """
         x1 = Dense(units*2, activation=gelu)(inputs)
         x1 = Dropout(self.dropout)(x1)
         x2 = Dense(self.classes)(x1)
@@ -94,6 +176,53 @@ class VisionTransformer:
         self.model.summary()
 
     def train(self, X_train, X_val, y_train, y_val, optimizer, lr, loss, metrics, epochs, lr_decay=None, decay_rate=0.985, weight_decay=0.00001, save_model=False, save_path=None, monitor='loss', mode='min'):
+        """
+        Function to train the current transformer model in VisionTransformer class
+
+        Parameters
+        ----------
+        X_train : tensor
+          The train set of tensors of the original RGB images
+        X_val : tensor
+          The validation set of tensors of the original RGB images
+        y_train : tensor
+          The train set class labels of tensors of the original RGB images
+        y_val : tensor
+          The validation set class labels of tensors of the original RGB images
+        optimizer : string
+          The parameter to decide which optimizer to use.
+          "adam" is using the Adam optimizer.
+          "adamW" is using the Adam Decouple Weight Decay optimizer.
+        lr : float
+          The parameter of the initial learning rate
+        loss : function
+          The loss function used for training
+        metrics : list
+          A list of metric functions to evaluate train and validation when training
+        epochs : integer
+          Number to decide how many iterations of the model is train over the whole train data set
+        lr_decay : string
+          Decide whether to use learning rate decay in which mode or not.
+          "linear" is decreasing the learning rate with subtracting a constant value decay_rate each
+          epoch(possible to be negative learning rate).
+          "power" is decreasing the learning rate with multiplying a constant value lesser than 1 decay_rate each epoch.
+        decay_rate : float
+          The decay rate of the learning rate each epoch. Is used if lr_decay is not None.
+        weight_decay : float
+          Decoupled weight decay parameter when using "adamW" optimizer
+        save_model : bool
+          Set True to enable saving the best model weights
+        save_path : string
+          If save_model is True. Path to save the best model weights
+        monitor : string
+          If save_model is True. Metric to decide the best model weights
+        mode : string
+          If save_model is True. Decide the 'min' or 'max' of metric value to decide the best model weights
+
+        References
+        ----------
+        "adamW", https://arxiv.org/abs/1711.05101
+        """
         # The learning rate epoch decay
         if lr_decay == 'linear':
             length = len(X_train)

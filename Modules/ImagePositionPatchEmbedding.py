@@ -1,3 +1,9 @@
+"""
+Image Patches embeddings plus position embeddings as a layer of the Vision Transformer model
+
+@author: Jeng-Chung Lien
+@email: masa67890@gmail.com
+"""
 import os
 # Suppress the INFO message
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'

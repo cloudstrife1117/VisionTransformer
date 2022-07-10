@@ -247,6 +247,7 @@ class VisionTransformer:
 
             lr = PiecewiseConstantDecay(boundaries=boundaries, values=values)
 
+        # Apply optimizer
         if optimizer == 'adam':
             opt = Adam(learning_rate=lr)
         elif optimizer == 'adamW':
@@ -254,8 +255,9 @@ class VisionTransformer:
         else:
             raise ValueError("Optimizer doesn't exists!")
 
+        # Compile model
         self.model.compile(optimizer=opt, loss=loss, metrics=metrics)
-
+        # Train model and record training history
         if save_model:
             # Add save best model weights checkpoint
             model_checkpoint_callback = ModelCheckpoint(

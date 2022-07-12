@@ -113,12 +113,12 @@ class VisionTransformer:
         """
         x_norm1 = LayerNormalization(epsilon=1e-6)(x)
         x_mha = MultiHeadAttention(head_size=self.proj_dim, num_heads=self.num_heads, dropout=self.dropout)([x_norm1, x_norm1, x_norm1])
-        x_concat1 = Add()([x_mha, x_norm1])
-        x_norm2 = LayerNormalization(epsilon=1e-6)(x_concat1)
+        x_add1 = Add()([x_mha, x_norm1])
+        x_norm2 = LayerNormalization(epsilon=1e-6)(x_add1)
         x_mlp1 = self.MLP(x_norm2, self.proj_dim)
-        x_concat2 = Add()([x_mlp1, x_concat1])
+        x_add2 = Add()([x_mlp1, x_add1])
 
-        return x_concat2
+        return x_add2
 
     def MLP(self, inputs, units):
         """

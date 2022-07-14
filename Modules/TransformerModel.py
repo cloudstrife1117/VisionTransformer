@@ -108,7 +108,7 @@ class VisionTransformer:
 
         Returns
         -------
-        context : tensor
+        x_add2 : tensor
           The output of the transformer encoder
         """
         x_norm1 = LayerNormalization(epsilon=1e-6)(x)
@@ -134,7 +134,7 @@ class VisionTransformer:
 
         Returns
         -------
-        context : tensor
+        x2 : tensor
           The output of the multi layer perceptron
         """
         x1 = Dense(units*2, activation=gelu)(inputs)
@@ -160,7 +160,7 @@ class VisionTransformer:
 
         Returns
         -------
-        context : tensor
+        x2 : tensor
           The final output of the vision transformer without logits(Need additional sigmoid or softmax to get probability)
         """
         x1 = Dense(units*2, activation=gelu)(inputs)

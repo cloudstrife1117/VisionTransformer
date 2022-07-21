@@ -172,7 +172,7 @@ For the linear learning rate decay, it is taking an initial learning rate at the
 * [**train_VisionTransformer.py:**](train_VisionTransformer.py) The driver script that contains example on how to train the Vision Transformer model with saving the model.
 
 ### Examples and Known Issues
-* **To Train the Model(example in [**train_VisionTransformer.py:**](train_VisionTransformer.py)):**
+* **To Train the Model(example in [**train_VisionTransformer.py**](train_VisionTransformer.py)):**
 
     First, please install the required dependencies in [Dependencies](#dependencies).
     
@@ -261,7 +261,7 @@ For the linear learning rate decay, it is taking an initial learning rate at the
               mode=monitor_metric_objective
               )
     ```
-* **To Load and Evaluate the Saved Model on the Test Set(example in [**test_VisionTransformer.py:**](test_VisionTransformer.py)):**
+* **To Load and Evaluate the Saved Model on the Test Set(example in [**test_VisionTransformer.py**](test_VisionTransformer.py)):**
 
     First, please install the required dependencies in [Dependencies](#dependencies).
     

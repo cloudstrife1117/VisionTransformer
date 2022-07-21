@@ -1,5 +1,3 @@
-README.md still working in progress, there will be a final report here of the experiment, examples and dependencies. References would also be all added later on.
-
 # Cifar-10 Dataset Classification with Vision Transformer
 
 ## Author

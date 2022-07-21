@@ -7,7 +7,19 @@ README.md still working in progress, there will be a final report here of the ex
 **Email:** masa67890@gmail.com
 
 ## Table of Contents
-temp
+* [Introduction](#introduction)
+* [CIFAR-10 Dataset](#cifar-10-dataset)
+* [Vision Transformer Model](#vision-transformer-model)
+* [Experiment](#experiment)
+* [Conclusion](#conclusion)
+* [Future Work](#future-work)
+* [Appendix](#appendix)
+* [How to Use](#how-to-use)
+    * [File Descriptions](#file-descriptions)
+    * [Examples and Known Issues](#examples-and-known-issues)
+* [Dependencies](#dependencies)
+* [Reference](#reference)
+* [Other Projects](#other-projects)
 
 ## Introduction
 In 2017, when the paper “Attention is All You Need” was introduced, it became a dominant model structure and architecture in the natural language processing(NLP) domain. Due to the component of the multi-head self-attention, an attention mechanism, and the scalability ,the availability of parallel computation and the flexibility of the transformer model. Transformer models have become the state of art model in NLP. Vision Transformer, an image classification model using transformers is implemented in this project with tensorflow. Vision Transformer is a model created by the google research and brain team. Due to the expensive computation of the transformer model on images they introduced this model to make transformers possible on images, this has opened a new era on images rather than using convolution neural networks. Transformers is a new era of state of art models on multiple data types not limited on images. We will be using this self-implemented Vision Transformer from the original paper to perform some experiment on a small data set for demonstration, Cifar-10, an image classification data set. We then will discuss the components of the model, the hyperparameters, the scale of different data sizes and the inductive bias that was introduced in the paper.
@@ -150,6 +162,150 @@ Since transformers are a more general model, it needs large amounts of data, by 
 
 ## Appendix
 For the linear learning rate decay, it is taking an initial learning rate at the first epoch and minimizing it by a constant each epoch. For both the 64 and 225 patches of the vision transformer models starting from the projection dimension of 16 to 256, the initial learning rates used here are 0.002, 0.001, 0.0005, 0.00025, and 0.000125. For the decay rates of these initial learning rates are 0.0000399, 0.0000199, 0.0000099, 0.0000049, and 0.00000249.
+
+## How to Use
+### File Descriptions
+* [**Figures:**](Figures) The folder that contains example figures of the dataset, model architecture and the experiment results used in the report.
+* [**Modules:**](Modules) The folder that contains modules.
+    * [**ImagePositionPatchEmbedding.py:**](Modules/ImagePositionPatchEmbedding.py) The module that contains the image patches embeddings + positional embeddings functions as a layer to feed in the vision transformer.
+    * [**TransformerModel.py:**](Modules/TransformerModel.py) The module that contains the self-implemented Vision Transformer in [[1]](#reference_anchor1) with tensorflow. Functions to train the model with choices of using adam optimizers with decouple weight decay, learning rate decay or activate saving the best model and loading models.
+* [**test_VisionTransformer.py:**](test_VisionTransformer.py) The driver script that contains example on how to evaluate on the test set with loading one of the trained Vision Transformer(**ViT_225_256 best model in the experiment**).
+* [**train_VisionTransformer.py:**](train_VisionTransformer.py) The driver script that contains example on how to train the Vision Transformer model with saving the model.
+
+### Examples and Known Issues
+* **To Train the Model(example in [**train_VisionTransformer.py:**](train_VisionTransformer.py)):**
+
+    First, please install the required dependencies in [Dependencies](#dependencies).
+    
+    Second, please import the VisionTransformer class. Also the loss function and metrics from tensorflow if needed, shown below.
+    ```python
+    from Modules.TransformerModel import VisionTransformer
+    from tensorflow.keras.losses import SparseCategoricalCrossentropy
+    from tensorflow.keras.metrics import SparseCategoricalAccuracy
+    ```
+    Thrid, we will be using the built-in CIFAR-10 dataset in keras and load the dataset, shown below.
+    ```python
+    import tensorflow as tf
+    
+    # Load Cifar-10 Dataset to train set and test set
+    (X_train, y_train), (X_test, y_test) = tf.keras.datasets.cifar10.load_data()
+    ```
+    
+    Fourth, create a variable that contains the VisionTransformer class with the hyperparameters, and we could show the model structure with the summary function, shown below.
+    
+    To note for the hyperparameters for the VisionTransformer class:
+    * **input_shape:** Requires a tuple of the original image shape.
+    * **batch_size:** Requires an integer, defining the batch size of data that would pass trough the model.
+    * **classes:** Requires an integer, defining the number of classes for the classification task.
+    * **patch_size:** Requires an integer, this is the size of the nxn patch image size that needs the input n.
+    * **stride_num:** Requires an integer, this is the stride of the sliding window to move how many pixels to get the patches(set the same number to patch_size for non-overlapping).
+    * **patch_num:** Requires an integer, this is the number of total patches that would be feed in the vision transformer model.
+    * **proj_dim:** Requires an integer, this is the number that decide the number of units trought each dense layers and the embedding vector size of the patches.
+    * **num_heads:** Requires an integer, this is the number that decide how many attention heads would be used in all of the multi-head attention component.
+    * **stack_num:** Requires an integer, this is the number that decide how many stacks of the transformer encoder that would be on top of one another to add the depth of the model.
+    * **dropout:** Requires an float number between 0-1, this is the probability of the dropout trought the whole model.
+    * **model:** There is also a parameter default as "ViT", requires a string. This decide which model to use in the VisionTransformer class, "ViT" is the current vision transformer model implemented.
+    ```python
+    # Define the VisionTransformer Model
+    ViT = VisionTransformer(input_shape=(image_size, image_size, channels),
+                            batch_size=batch_size,
+                            classes=classes,
+                            patch_size=patch_size,
+                            stride_num=stride_num,
+                            patch_num=patch_num,
+                            proj_dim=proj_dim,
+                            num_heads=num_heads,
+                            stack_num=stack_num,
+                            dropout=dropout
+                            )
+
+    # Print the model details
+    ViT.summary()
+    ```
+    
+    Last, to train the vision transformer we use the function train in the VisionTransformer class and set the training settings, shown below.
+    
+    To note for the training settings for the train function in the VisionTransformer class.
+    * **X_train:** Requires a training dataset as a tensor with shape(n, h, w, c), where n is the number of samples in batches, h is the height of the image, w is the width of the image(to note h=w here), and c is the number of channels of the image.
+    * **X_val:** Requires a validation dataset as a tensor with shape(n, h, w, c), where n is the number of samples in batches, h is the height of the image, w is the width of the image(to note h=w here), and c is the number of channels of the image.
+    * **y_train:** Requires a tensor form of the label of the training dataset, the shape depends on the used loss function.
+    * **y_val:** Requires a tensor form of the label of the validation dataset, the shape depends on the used loss function.
+    * **optimizer:** Requires a string, where "adam" is using the Adam optimizer, and "adamW" is using the Adam Decouple Weight Decay optimizer.
+    * **lr:** Requires a float number, this decides the initial learning rate.
+    * **loss_function:** Requires a function, this decides the loss function to calculate the loss.
+    * **metrics:** Requires an array of functions, this array could be empty or could contain one or more metric functions.
+    * **epochs:** Requires an integer, the total number of epochs to train.
+    * **lr_decay:** Requires a string, where "linear" is decreasing the learning rate with subtracting a constant value decay_rate each epoch(possible to be negative learning rate), "power" is decreasing the learning rate with multiplying a constant value lesser than 1 decay_rate each epoch, and None for same learning rate each epoch. Default as None.
+    * **decay_rate:** Requires a float number, this decide the constant value for the learning rate to decay each epoch depends on the decay mode. Default as 0.985.
+    * **weight_decay:** Requires a float number, this is used if the optimizer is "adamW" where this decide the weight decay rate for the Adam Decouple Weight Decay. Default as 10^-5.
+    * **save_model:** Requires a boolean, set true to enable to save the best model training trough each epoch. Default as False.
+    * **save_path:** Requires a string, used if save_model is true. This is the path to save the model file. Default as None.
+    * **monitor:** Requires a string, used if save_model is true. This decide which metric name to decide the best model to save. Default as "loss".
+    * **mode:** Requires a string, used if save_model is true. This decide the best model is looking at the maximum value(set "max") of the metric or the mimimum value(set "min") metric trough each epoch to save the best model. Default as "min".
+    ```python
+    # Train and save the model
+    ViT.train(X_train=X_train,
+              X_val=X_test,
+              y_train=y_train,
+              y_val=y_test,
+              optimizer=optimizer,
+              lr=learning_rate,
+              loss=loss_function,
+              metrics=metrics,
+              epochs=epochs,
+              lr_decay=lr_decay_mode,
+              decay_rate=decay_rate,
+              weight_decay=weight_decay,
+              save_model=is_savemode,
+              save_path=save_path,
+              monitor=monitor_metric,
+              mode=monitor_metric_objective
+              )
+    ```
+* **To Load and Evaluate the Saved Model on the Test Set(example in [**test_VisionTransformer.py:**](test_VisionTransformer.py)):**
+
+    First, please install the required dependencies in [Dependencies](#dependencies).
+    
+    Second, we will be using the built-in CIFAR-10 test dataset in keras and load the dataset, shown below.
+    ```python
+    import tensorflow as tf
+    
+    # Load Cifar-10 Dataset to train set and test set
+    (_, _), (X_test, y_test) = tf.keras.datasets.cifar10.load_data()
+    ```
+    Third, to load the saved model. We have to import the VisionTransformer class and used the tensorlfow load model function(given the path of the model), shown below.
+    
+    Note to get the models used in the experiment, you could download the .zip file from [link](https://drive.google.com/file/d/1xMScdJJozpEXvdfZ7AciRVLBqNTRPj-E/view?usp=sharing) and extract the Models folder to the root path of the VisionTransformer repository folder to use.
+    ```python
+    from Modules.TransformerModel import VisionTransformer
+    
+    # Load the saved VisionTransformer model
+    ViT = tf.keras.models.load_model(model_path)
+    ```
+    Last, to evaluate the loaded saved model on the test set we use the evaluate function on the model from tensorflow with feeding in the test dataset with a hyperparameter batch_size(same as the size when training due to some issues), shown below.
+    ```python
+    # Calculate and print the test set result
+    results = ViT.evaluate(X_test, y_test, batch_size=batch_size)
+    print("Test Acc:", str(results[1]*100) + "%")
+    ```
+* **For Current Known Issues with this Implementation:**
+    * **First Issue(in [**ImagePositionPatchEmbedding.py**](Modules/ImagePositionPatchEmbedding.py#L60-L71)):**
+        The batch size for this model implementation is fixed and must be the same size each epoch for initial traning and testing or there will be issues due to the nature of the tensorflow boardcast function, this is to boardcast the class token to each sample in the batch for batch training.
+        A dynamic batch size training for each epoch could be used by uncommenting the code, shown below.
+        ```python
+        if images.shape[0] != None:
+                self.batch_size = images.shape[0]
+            else:
+                self.batch_size = -1
+        ```
+        However, by using this way after saving the model and loading it no matter the batch size there will be unkown issues loading to use it, unless it is fixed as the same size. This is possible with the keras fit function with getting some of the data shape issues, where a possible solution would be getting the actual size of batches at the start of training each epoch, but this won't be implemented to test currently, just to note this issue here.
+    * **Second Issue(in [**TransformerModel.py**](Modules/TransformerModel.py#L226-#L248)):**
+        This issue is the implementation of the learning rate decay mode, due to using the function of PiecewiseConstantDecay in tensorflow and the value setup algorithm. Somehow this slows down the training speed and would probably have memory issues if the epoch is too large, to solve this issue in the tf.keras.optimizers.schedules the using the class PolynomialDecay probably would solve this issue. However, due to the enough epochs and small set of data this wouldn't be changed currently, just to note this issue here.
+
+## Dependencies
+* Python 3.7
+* Tensorflow 2.3.0
+* Tensorflow-addons 0.13.0
 
 ## Reference
 <a name="reference_anchor1"></a>[1] A. Dosovitskiy, L. Beyer, A. Kolesnikov, D. Weissenborn, X. Zhai, T. Unterthiner, M. Dehghani, M. Minderer, G. Heigold, S. Gelly, J. Uszkoreit, and N. Houlsby, “An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale,” Jun. 2021. [Online]. Available: [https://arxiv.org/abs/2010.11929](https://arxiv.org/abs/2010.11929)
